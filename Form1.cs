@@ -31,8 +31,6 @@ namespace ConsolidadorLogs
         {
          "MACHINE_RECLAIMING_FLOW_BRIDGE",
          "MACHINE_CURRENT_OPERATION_MODE_BRIDGE",
-         "MACHINE_RECLAIMING_FLOW_BRIDGE",
-         "MACHINE_CURRENT_OPERATION_MODE_BRIDGE",
          "MACHINE_FLOW_SETPOINT_CLAMPED_BRIDGE",
          "MACHINE_OPERATION_BELT_WORKING_BRIDGE",
          "MACHINE_STATUS_BUCKETWHEEL_ON_BRIDGE"
@@ -48,7 +46,7 @@ namespace ConsolidadorLogs
         {
             //Configurações básicas da janela
             this.Text = "Consolidador de Logs - Etapa 1";
-            this.Size = new Size(600,500);
+            this.Size = new Size(800,620);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -81,7 +79,7 @@ namespace ConsolidadorLogs
             Label lblDestino = new Label
             {
                 Text = "Pasta Destino (Consolidado):",
-                Location = new Point(20,89),
+                Location = new Point(20,79),
                 AutoSize = true
             };
 
@@ -105,15 +103,89 @@ namespace ConsolidadorLogs
                 Width = 100
             };
 
-            Label lblDataInicio = new Label
-
             btnBrowseDestino.Click += (s,e) => EscolherPasta(textDestino);
+
+            Label lblDataInicio = new Label
+            {
+                Text = "Data Inicial:",
+                Location = new Point(20, 150),
+                AutoSize = true
+            };
+
+            dateInicio = new DateTimePicker
+            {
+                Location = new Point(20, 170),
+                Format = DateTimePickerFormat.Short,
+                Width = 130,
+                Value = DateTime.Now.AddMonths(-1) // definie a data inicial como a data atual
+            };
+
+            Label lblDataFim = new Label
+            {
+                Text = "Data Final:",
+                Location = new Point(180, 150),
+                AutoSize = true
+            };
+
+            dateFim = new DateTimePicker
+            {
+                Location = new Point(180, 170),
+                Format = DateTimePickerFormat.Short,
+                Width = 130,
+                Value = DateTime.Now
+            };
+
+            Label lblMaquinas = new Label
+            {
+                Text = "Selecione as Máquinas:",
+                Location = new Point(20, 200),
+                AutoSize = true
+            };
+
+            chekMaquinas = new CheckedListBox
+            {
+                Location = new Point(20, 225),
+                Width = 220,
+                Height = 280,
+                CheckOnClick = true
+            };
+
+            chekMaquinas.Items.AddRange(listMaquinas);
+            for (int i = 0; i < chekMaquinas.Items.Count; i++)
+            {
+                chekMaquinas.SetItemChecked(i, true);
+            } ;
+
+            Label lblLogs = new Label
+            {
+                Text = "Selecione os Logs:",
+                Location = new Point(260, 200),
+                AutoSize = true
+            };
+
+            chekLogs = new CheckedListBox
+            {
+                Location = new Point(260, 225),
+                Width = 490,
+                Height = 280,
+                CheckOnClick = true
+            };
+
+            chekLogs.Items.AddRange(listLog);
+            for (int i = 0; i < chekLogs.Items.Count; i++) 
+            {
+                chekLogs.SetItemChecked(i, true); // Deixa todos marcados
+            } ;
 
             //Add todos os elementos na tela
             this.Controls.AddRange(new Control[]
             {
                 lblOrigem, textOrigem, btnBrowseOrigem,
-                lblDestino, textDestino, btnBrowseDestino
+                lblDestino, textDestino, btnBrowseDestino,
+                lblDataInicio, dateInicio,
+                lblDataFim, dateFim,
+                lblMaquinas, chekMaquinas,
+                lblLogs, chekLogs
             });
         }
 

@@ -1,0 +1,15 @@
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\bin\Debug\net8.0-windows\Projeto C#.exe
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\bin\Debug\net8.0-windows\Projeto C#.deps.json
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\bin\Debug\net8.0-windows\Projeto C#.runtimeconfig.json
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\bin\Debug\net8.0-windows\Projeto C#.dll
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\bin\Debug\net8.0-windows\Projeto C#.pdb
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.AssemblyInfoInputs.cache
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.AssemblyInfo.cs
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.csproj.CoreCompileInputs.cache
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.sourcelink.json
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.dll
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\refint\Projeto C#.dll
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.pdb
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\Projeto C#.genruntimeconfig.cache
+C:\Users\claudivan.nascimento\Documents\Projeto C#\ConsolidadorLogs\obj\Debug\net8.0-windows\ref\Projeto C#.dll
