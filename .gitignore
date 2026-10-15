@@ -1,0 +1,8 @@
+# Pastas de compilação (binários e temporários)
+bin/
+obj/
+
+# Arquivos de usuário
+*.csproj.user
+.vscode/
+.idea/

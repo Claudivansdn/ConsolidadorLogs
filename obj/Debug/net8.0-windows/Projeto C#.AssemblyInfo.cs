@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Ferramenta para consolidação de arquivos de log de medição.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fcd3b55cc7ddc16e7b9d626119a9211d0281157c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+18d20d03f6f8813bf648d687c9ed978fff4f9273")]
 [assembly: System.Reflection.AssemblyProductAttribute("Projeto C#")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Projeto C#")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0")]
