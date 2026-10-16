@@ -79,6 +79,7 @@ namespace ConsolidadorLogs
                 Width = 100
             };
 
+
             // Adiciona o evento de clique ao botão para abrir o diálogo de seleção de pasta
             btnBrowseOrigem.Click += (s,e) => EscolherPasta(textOrigem);
 
@@ -224,6 +225,18 @@ namespace ConsolidadorLogs
             });
         }
 
+        // Método para abrir o diálogo de seleção de pasta e atualizar o TextBox correspondente
+        private void EscolherPasta(TextBox campoTexto)
+        {
+            using (FolderBrowserDialog fbd = new FolderBrowserDialog())
+            {
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    campoTexto.Text = fbd.SelectedPath;
+                }
+            } 
+        }
+
         // Método acionado ao clicar no botão "Consolidar Logs"
         private void BtnExecutar_Click(object? sender, EventArgs e)
         {
@@ -267,6 +280,9 @@ namespace ConsolidadorLogs
                     logsSelecionados
                 );
 
+
+                TextReplacer.ProcessarPasta(textDestino.Text);
+
                 // Monta mensagem final
                 string mensagem = "Consolidação realizada com sucesso!";
 
@@ -284,18 +300,6 @@ namespace ConsolidadorLogs
                 MessageBox.Show($"Ocorreu um erro ao consolidar os logs: {ex.Message}", 
                                 "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        // Método para abrir o diálogo de seleção de pasta e atualizar o TextBox correspondente
-        private void EscolherPasta(TextBox campoTexto)
-        {
-            using (FolderBrowserDialog fbd = new FolderBrowserDialog())
-            {
-                if (fbd.ShowDialog() == DialogResult.OK)
-                {
-                    campoTexto.Text = fbd.SelectedPath;
-                }
-            } 
         }
     }
 }
