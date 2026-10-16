@@ -1,7 +1,9 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
+using ConsolidadorLogs.Core; // Importa as classes da pasta Core
 
 namespace ConsolidadorLogs
 {
@@ -12,7 +14,7 @@ namespace ConsolidadorLogs
         private TextBox textDestino;
         private Button btnBrowseOrigem;
         private Button btnBrowseDestino;
-        private Button btnProcessar;
+        private Button btnExecutar;
         private DateTimePicker dateInicio;
         private DateTimePicker dateFim;
         private CheckedListBox chekMaquinas;
@@ -196,6 +198,19 @@ namespace ConsolidadorLogs
                 chekLogs.SetItemChecked(i, true); // Deixa todos marcados
             } ;
 
+            // 5. Botão Executar Consolidação
+            btnExecutar = new Button
+            {
+                Text = "EXECUTAR",
+                Location = new Point(580, 520),
+                Width = 170,
+                Height = 40,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                BackColor = Color.LightSkyBlue
+            };
+
+            btnExecutar.Click += BtnExecutar_Click;
+
             // Adiciona todos os componentes à janela
             this.Controls.AddRange(new Control[]
             {
@@ -204,8 +219,71 @@ namespace ConsolidadorLogs
                 lblDataInicio, dateInicio,
                 lblDataFim, dateFim,
                 lblMaquinas, chekMaquinas,
-                lblLogs, chekLogs
+                lblLogs, chekLogs,
+                btnExecutar
             });
+        }
+
+        // Método acionado ao clicar no botão "Consolidar Logs"
+        private void BtnExecutar_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(textOrigem.Text))
+                {
+                    MessageBox.Show("Por favor, selecione a pasta de origem dos logs.", 
+                                    "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Coleta máquinas selecionadas
+                List<string> maquinasSelecionadas = new List<string>();
+                foreach (var item in chekMaquinas.CheckedItems)
+                {
+                    maquinasSelecionadas.Add(item.ToString()!);
+                }
+
+                // Coleta logs selecionados
+                List<string> logsSelecionados = new List<string>();
+                foreach (var item in chekLogs.CheckedItems)
+                {
+                    logsSelecionados.Add(item.ToString()!);
+                }
+
+                if (maquinasSelecionadas.Count == 0 || logsSelecionados.Count == 0)
+                {
+                    MessageBox.Show("Selecione ao menos uma máquina e um tipo de log para prosseguir.", 
+                                    "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Executa a consolidação chamando o backend na pasta Core
+                List<string> naoEncontrados = LogConsolidator.Executar(
+                    textOrigem.Text,
+                    textDestino.Text,
+                    dateInicio.Value,
+                    dateFim.Value,
+                    maquinasSelecionadas,
+                    logsSelecionados
+                );
+
+                // Monta mensagem final
+                string mensagem = "Consolidação realizada com sucesso!";
+
+                if (naoEncontrados.Count > 0)
+                {
+                    mensagem += "\n\nAtenção! Os seguintes arquivos não foram encontrados nas subpastas:\n";
+                    mensagem += string.Join("\n", naoEncontrados);
+                }
+
+                MessageBox.Show(mensagem, "Resultado", MessageBoxButtons.OK, 
+                                naoEncontrados.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ocorreu um erro ao consolidar os logs: {ex.Message}", 
+                                "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // Método para abrir o diálogo de seleção de pasta e atualizar o TextBox correspondente
