@@ -23,24 +23,39 @@ namespace ConsolidadorLogs
         private ProgressBar progressBar;
         private Label lblStatus;
 
-        // Listas de dados pré-cadastrados
-        private readonly string[] listMaquinas = new[]
-        {
-            "EP2091KS01", "EP2091KS02", "EP2091KS03", "EP2091KS04", "EP2091KS05", 
-            "RC2092KS01", "RC2092KS02", "RC2092KS03", "RC2092KS04", "RC2092KS05", "RC2092KS06",
-            "EP2020KS01", "EP2020KS02", "EP2020KS03",
-            "RC2020KS01", "RC2020KS02", "RC2020KS03"
-        };
+        // Variáveis de backup para o recurso de Desfazer/Reverter
+        private List<string>? maquinaBackup = null;
+        private List<string>? logBackup = null;        // Listas de dados pré-cadastrados
+        private List<string> listMaquinas = ConfigManager.CarregarMaquinas(); // Carrega máquinas do arquivo JSON ou usa padrão
 
-        private readonly string[] listLog = new[]
-        {
-            "MACHINE_RECLAIMING_FLOW_BRIDGE",
-            "MACHINE_CURRENT_OPERATION_MODE_BRIDGE",
-            "MACHINE_FLOW_SETPOINT_CLAMPED_BRIDGE",
-            "MACHINE_OPERATION_BELT_WORKING_BRIDGE",
-            "MACHINE_STATUS_BUCKETWHEEL_ON_BRIDGE"
-        };
+        private List<string> listLog = ConfigManager.CarregarLogs(); // Carrega logs do arquivo JSON ou usa padrão
 
+        private string? ExibirInputBox(string titulo, string mensagem)
+        {
+            Form prompt = new Form()
+            {
+                Width = 400,
+                Height = 160,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = titulo,
+                StartPosition = FormStartPosition.CenterParent,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+
+            Label lblTexto = new Label() { Left = 20, Top = 15, Text = mensagem, AutoSize = true };
+            TextBox txtInput = new TextBox() { Left = 20, Top = 40, Width = 340 };
+            Button btnConfirmar = new Button() { Text = "OK", Left = 200, Width = 75, Top = 75, DialogResult = DialogResult.OK };
+            Button btnCancelar = new Button() { Text = "Cancelar", Left = 285, Width = 75, Top = 75, DialogResult = DialogResult.Cancel };
+
+            prompt.Controls.Add(lblTexto);
+            prompt.Controls.Add(txtInput);
+            prompt.Controls.Add(btnConfirmar);
+            prompt.Controls.Add(btnCancelar);
+            prompt.AcceptButton = btnConfirmar;
+
+            return prompt.ShowDialog() == DialogResult.OK ? txtInput.Text.Trim() : null;
+        }
         // Construtor
         public MainScreen()
         {
@@ -53,7 +68,7 @@ namespace ConsolidadorLogs
         {
             // Configurações básicas da janela
             this.Text = "Consolidador de Logs";
-            this.Size = new Size(800, 620);
+            this.Size = new Size(800, 670);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -158,11 +173,105 @@ namespace ConsolidadorLogs
                 CheckOnClick = true
             };
 
-            chekMaquinas.Items.AddRange(listMaquinas);
+            chekMaquinas.Items.AddRange(listMaquinas.ToArray());
             for (int i = 0; i < chekMaquinas.Items.Count; i++)
             {
                 chekMaquinas.SetItemChecked(i, true);
             }
+
+            Button btnAddMaquina = new Button { Text = "+", Location = new Point(20, 510), Width = 30, Height = 25 };
+            Button btnRemoveMaquina = new Button { Text = "-", Location = new Point(55, 510), Width = 30, Height = 25 };
+            Button btnUndoMaquina = new Button { Text = "↺", Location = new Point(90, 510), Width = 30, Height = 25 }; // Botão Reverter
+            Button btnResetMaquina = new Button { Text = "Padrão", Location = new Point(125, 510), Width = 55, Height = 25 };            // Evento para Adicionar Máquina (salva o backup antes de alterar)
+            
+            btnAddMaquina.Click += (s, e) =>
+            {
+                string? novaMaquina = ExibirInputBox("Nova Máquina", "Digite o código/nome da máquina:");
+                if (!string.IsNullOrWhiteSpace(novaMaquina))
+                {
+                    novaMaquina = novaMaquina.ToUpper();
+                    if (!chekMaquinas.Items.Contains(novaMaquina))
+                    {
+                        // Guarda o estado atual antes de modificar
+                        SalvarBackupMaquinas();
+
+                        chekMaquinas.Items.Add(novaMaquina, true);
+                        SalvarListaMaquinasAtualizada();
+                    }
+                }
+            };
+
+            // Evento para Remover Máquina (salva o backup antes de alterar)
+            btnRemoveMaquina.Click += (s, e) =>
+            {
+                if (chekMaquinas.SelectedItem != null)
+                {
+                    // Guarda o estado atual antes de modificar
+                    SalvarBackupMaquinas();
+
+                    chekMaquinas.Items.Remove(chekMaquinas.SelectedItem);
+                    SalvarListaMaquinasAtualizada();
+                }
+                else
+                {
+                    MessageBox.Show("Selecione uma máquina para remover.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+
+            // Evento para Reverter a última alteração das Máquinas
+            btnUndoMaquina.Click += (s, e) =>
+            {
+                if (maquinaBackup != null)
+                {
+                    // Restaura a lista do backup
+                    chekMaquinas.Items.Clear();
+                    foreach (var item in maquinaBackup)
+                    {
+                        chekMaquinas.Items.Add(item, true);
+                    }
+
+                    // Salva o estado revertido no arquivo .json
+                    SalvarListaMaquinasAtualizada();
+
+                    // Limpa o backup para impedir múltiplos undos
+                    maquinaBackup = null;
+
+                    MessageBox.Show("Última alteração de máquinas revertida com sucesso!", "Reverter", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Não há nenhuma alteração recente para reverter.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };    
+
+            btnResetMaquina.Click += (s, e) =>
+            {
+                var resultado = MessageBox.Show(
+                    "Tem certeza que deseja restaurar a lista padrão de máquinas?\nIsso substituirá as máquinas cadastradas atualmente.",
+                    "Confirmar Restauração",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (resultado == DialogResult.Yes)
+                {
+                    // Salva o estado atual no backup caso o usuário queira desfazer depois
+                    SalvarBackupMaquinas();
+
+                    // Recarrega os padrões do ConfigManager
+                    List<string> padrao = ConfigManager.RestaurarMaquinasPadrao();
+
+                    // Atualiza a CheckBoxList na tela
+                    chekMaquinas.Items.Clear();
+                    foreach (var maquina in padrao)
+                    {
+                        chekMaquinas.Items.Add(maquina, true);
+                    }
+
+                    MessageBox.Show("Lista de máquinas restaurada para o padrão com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+
 
             Label lblLogs = new Label
             {
@@ -179,17 +288,97 @@ namespace ConsolidadorLogs
                 CheckOnClick = true
             };
 
-            chekLogs.Items.AddRange(listLog);
+            chekLogs.Items.AddRange(listLog.ToArray());
             for (int i = 0; i < chekLogs.Items.Count; i++)
             {
                 chekLogs.SetItemChecked(i, true);
             }
 
+            Button btnAddLog = new Button { Text = "+", Location = new Point(260, 510), Width = 30, Height = 25 };
+            Button btnRemoveLog = new Button { Text = "-", Location = new Point(295, 510), Width = 30, Height = 25 };
+            Button btnUndoLog = new Button { Text = "↺", Location = new Point(330, 510), Width = 30, Height = 25 }; // Botão Reverter
+            Button btnResetLog = new Button { Text = "Padrão", Location = new Point(365, 510), Width = 55, Height = 25 };            btnAddLog.Click += (s, e) =>
+            
+            {
+                string? novoLog = ExibirInputBox("Novo Log", "Digite o nome do log:");
+                if (!string.IsNullOrWhiteSpace(novoLog))
+                {
+                    novoLog = novoLog.ToUpper();
+                    if (!chekLogs.Items.Contains(novoLog))
+                    {
+                        SalvarBackupLogs(); // Guarda o estado anterior
+
+                        chekLogs.Items.Add(novoLog, true);
+                        SalvarListaLogsAtualizada();
+                    }
+                }
+            };
+
+            btnRemoveLog.Click += (s, e) =>
+            {
+                if (chekLogs.SelectedItem != null)
+                {
+                    SalvarBackupLogs(); // Guarda o estado anterior
+
+                    chekLogs.Items.Remove(chekLogs.SelectedItem);
+                    SalvarListaLogsAtualizada();
+                }
+            };
+
+            btnUndoLog.Click += (s, e) =>
+            {
+                if (logBackup != null)
+                {
+                    chekLogs.Items.Clear();
+                    foreach (var item in logBackup)
+                    {
+                        chekLogs.Items.Add(item, true);
+                    }
+
+                    SalvarListaLogsAtualizada();
+                    logBackup = null;
+
+                    MessageBox.Show("Última alteração de logs revertida com sucesso!", "Reverter", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Não há nenhuma alteração recente para reverter.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+
+            btnResetLog.Click += (s, e) =>
+            {
+                var resultado = MessageBox.Show(
+                    "Tem certeza que deseja restaurar a lista padrão de logs?\nIsso substituirá os logs cadastrados atualmente.",
+                    "Confirmar Restauração",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (resultado == DialogResult.Yes)
+                {
+                    // Salva o estado atual no backup caso queira desfazer
+                    SalvarBackupLogs();
+
+                    // Recarrega os padrões do ConfigManager
+                    List<string> padrao = ConfigManager.RestaurarLogsPadrao();
+
+                    // Atualiza a CheckBoxList na tela
+                    chekLogs.Items.Clear();
+                    foreach (var log in padrao)
+                    {
+                        chekLogs.Items.Add(log, true);
+                    }
+
+                    MessageBox.Show("Lista de logs restaurada para o padrão com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+
             // 5. Botão Executar Consolidação
             btnExecutar = new Button
             {
                 Text = "EXECUTAR",
-                Location = new Point(580, 520),
+                Location = new Point(580, 555),
                 Width = 170,
                 Height = 40,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
@@ -202,14 +391,14 @@ namespace ConsolidadorLogs
             lblStatus = new Label
             {
                 Text = "Status: Aguardando execução...",
-                Location = new Point(20, 515),
+                Location = new Point(20, 550),
                 Width = 540,
                 AutoSize = false
             };
 
             progressBar = new ProgressBar
             {
-                Location = new Point(20, 535),
+                Location = new Point(20, 570),
                 Width = 540,
                 Height = 25,
                 Minimum = 0,
@@ -217,15 +406,15 @@ namespace ConsolidadorLogs
                 Value = 0
             };
 
-            // Adiciona TODOS os componentes à janela (incluindo status e barra)
+            // Adiciona TODOS os componentes à janela
             this.Controls.AddRange(new Control[]
             {
                 lblOrigem, textOrigem, btnBrowseOrigem,
                 lblDestino, textDestino, btnBrowseDestino,
                 lblDataInicio, dateInicio,
                 lblDataFim, dateFim,
-                lblMaquinas, chekMaquinas,
-                lblLogs, chekLogs,
+                lblMaquinas, chekMaquinas, btnAddMaquina, btnRemoveMaquina,
+                lblLogs, chekLogs, btnAddLog, btnRemoveLog, btnUndoLog, btnUndoMaquina, btnResetLog, btnResetMaquina,
                 lblStatus, progressBar,
                 btnExecutar
             });
@@ -336,5 +525,41 @@ namespace ConsolidadorLogs
                 lblStatus.Text = "Status: Aguardando execução...";
             }
         }
+        private void SalvarListaMaquinasAtualizada()
+        {
+            List<string> listaAtual = new List<string>();
+            foreach (var item in chekMaquinas.Items)
+            {
+                listaAtual.Add(item.ToString()!);
+            }
+            ConfigManager.SalvarMaquinas(listaAtual);
+        }
+
+        private void SalvarListaLogsAtualizada()
+        {
+            List<string> listaAtual = new List<string>();
+            foreach (var item in chekLogs.Items)
+            {
+                listaAtual.Add(item.ToString()!);
+            }
+            ConfigManager.SalvarLogs(listaAtual);
+        }
+        private void SalvarBackupMaquinas()
+        {
+            maquinaBackup = new List<string>();
+            foreach (var item in chekMaquinas.Items)
+            {
+                maquinaBackup.Add(item.ToString()!);
+            }
+        }
+
+        private void SalvarBackupLogs()
+        {
+            logBackup = new List<string>();
+            foreach (var item in chekLogs.Items)
+            {
+                logBackup.Add(item.ToString()!);
+            }
+        }        
     }
 }
