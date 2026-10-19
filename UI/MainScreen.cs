@@ -68,7 +68,7 @@ namespace ConsolidadorLogs
         {
             // Configurações básicas da janela
             this.Text = "Consolidador de Logs";
-            this.Size = new Size(800, 670);
+            this.Size = new Size(840, 670);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -181,9 +181,10 @@ namespace ConsolidadorLogs
 
             Button btnAddMaquina = new Button { Text = "+", Location = new Point(20, 510), Width = 30, Height = 25 };
             Button btnRemoveMaquina = new Button { Text = "-", Location = new Point(55, 510), Width = 30, Height = 25 };
-            Button btnUndoMaquina = new Button { Text = "↺", Location = new Point(90, 510), Width = 30, Height = 25 }; // Botão Reverter
-            Button btnResetMaquina = new Button { Text = "Padrão", Location = new Point(125, 510), Width = 55, Height = 25 };            // Evento para Adicionar Máquina (salva o backup antes de alterar)
-            
+            Button btnUndoMaquina = new Button { Text = "↺", Location = new Point(90, 510), Width = 30, Height = 25 }; 
+            Button btnResetMaquina = new Button { Text = "Padrão", Location = new Point(125, 510), Width = 55, Height = 25 };
+            Button btnSalvarPadraoMaquina = new Button { Text = "Salvar Padrão", Location = new Point(190, 510), Width = 95, Height = 25 };
+
             btnAddMaquina.Click += (s, e) =>
             {
                 string? novaMaquina = ExibirInputBox("Nova Máquina", "Digite o código/nome da máquina:");
@@ -272,6 +273,27 @@ namespace ConsolidadorLogs
                 }
             };
 
+            btnSalvarPadraoMaquina.Click += (s, e) =>
+            {
+                var resultado = MessageBox.Show(
+                    "Deseja definir as máquinas cadastradas atualmente como o novo padrão deste computador?",
+                    "Salvar como Padrão",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (resultado == DialogResult.Yes)
+                {
+                    List<string> maquinasAtuais = new List<string>();
+                    foreach (var item in chekMaquinas.Items)
+                    {
+                        maquinasAtuais.Add(item.ToString()!);
+                    }
+
+                    ConfigManager.DefinirMaquinasComoPadrao(maquinasAtuais);
+                    MessageBox.Show("Lista atual de máquinas definida como o novo padrão com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
 
             Label lblLogs = new Label
             {
@@ -294,11 +316,13 @@ namespace ConsolidadorLogs
                 chekLogs.SetItemChecked(i, true);
             }
 
-            Button btnAddLog = new Button { Text = "+", Location = new Point(260, 510), Width = 30, Height = 25 };
-            Button btnRemoveLog = new Button { Text = "-", Location = new Point(295, 510), Width = 30, Height = 25 };
-            Button btnUndoLog = new Button { Text = "↺", Location = new Point(330, 510), Width = 30, Height = 25 }; // Botão Reverter
-            Button btnResetLog = new Button { Text = "Padrão", Location = new Point(365, 510), Width = 55, Height = 25 };            btnAddLog.Click += (s, e) =>
+            Button btnAddLog = new Button { Text = "+", Location = new Point(300, 510), Width = 30, Height = 25 };
+            Button btnRemoveLog = new Button { Text = "-", Location = new Point(335, 510), Width = 30, Height = 25 };
+            Button btnUndoLog = new Button { Text = "↺", Location = new Point(370, 510), Width = 30, Height = 25 }; // Botão Reverter
+            Button btnResetLog = new Button { Text = "Padrão", Location = new Point(405, 510), Width = 55, Height = 25 };
+            Button btnSalvarPadraoLog = new Button { Text = "Salvar Padrão", Location = new Point(470, 510), Width = 95, Height = 25 };
             
+            btnAddLog.Click += (s, e) =>
             {
                 string? novoLog = ExibirInputBox("Novo Log", "Digite o nome do log:");
                 if (!string.IsNullOrWhiteSpace(novoLog))
@@ -374,6 +398,27 @@ namespace ConsolidadorLogs
                 }
             };
 
+            btnSalvarPadraoLog.Click += (s, e) =>
+            {
+                var resultado = MessageBox.Show(
+                    "Deseja definir os logs cadastrados atualmente como o novo padrão deste computador?",
+                    "Salvar como Padrão",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (resultado == DialogResult.Yes)
+                {
+                    List<string> logsAtuais = new List<string>();
+                    foreach (var item in chekLogs.Items)
+                    {
+                        logsAtuais.Add(item.ToString()!);
+                    }
+
+                    ConfigManager.DefinirLogsComoPadrao(logsAtuais);
+                    MessageBox.Show("Lista atual de logs definida como o novo padrão com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
             // 5. Botão Executar Consolidação
             btnExecutar = new Button
             {
@@ -414,7 +459,8 @@ namespace ConsolidadorLogs
                 lblDataInicio, dateInicio,
                 lblDataFim, dateFim,
                 lblMaquinas, chekMaquinas, btnAddMaquina, btnRemoveMaquina,
-                lblLogs, chekLogs, btnAddLog, btnRemoveLog, btnUndoLog, btnUndoMaquina, btnResetLog, btnResetMaquina,
+                lblLogs, chekLogs, btnAddLog, btnRemoveLog, btnUndoLog, btnUndoMaquina, 
+                btnResetLog, btnResetMaquina, btnSalvarPadraoLog, btnSalvarPadraoMaquina,
                 lblStatus, progressBar,
                 btnExecutar
             });

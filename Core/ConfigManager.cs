@@ -110,6 +110,19 @@ namespace ConsolidadorLogs.Core
         {
             SalvarLogs(LogsPadrao);
             return new List<string>(LogsPadrao);
-        }        
+        }  
+
+        // Salva a lista atual de máquinas como o novo padrão permanente
+        public static void DefinirMaquinasComoPadrao(List<string> novasMaquinas)
+        {
+            // Sobrescreve o arquivo JSON principal de padrões ou atualiza a lista base
+            SalvarMaquinas(novasMaquinas);
+        }
+
+        // Salva a lista atual de logs como o novo padrão permanente
+        public static void DefinirLogsComoPadrao(List<string> novosLogs)
+        {
+            SalvarLogs(novosLogs);
+        }              
     }
 }
