@@ -19,6 +19,7 @@ namespace ConsolidadorLogs
         private DateTimePicker dateInicio;
         private DateTimePicker dateFim;
         private CheckedListBox chekMaquinas;
+        private CheckBox chekgnorarMaquina;
         private CheckedListBox chekLogs;
         private ProgressBar progressBar;
         private Label lblStatus;
@@ -69,7 +70,6 @@ namespace ConsolidadorLogs
             // Configurações básicas da janela
             this.Text = "Consolidador de Logs";
             this.Size = new Size(840, 670);
-            this.Icon = new Icon("Assets/png.ico");            
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -174,16 +174,11 @@ namespace ConsolidadorLogs
                 CheckOnClick = true
             };
 
-            chekMaquinas.Items.AddRange(listMaquinas.ToArray());
-            for (int i = 0; i < chekMaquinas.Items.Count; i++)
-            {
-                chekMaquinas.SetItemChecked(i, true);
-            }
 
             Button btnAddMaquina = new Button { Text = "+", Location = new Point(20, 510), Width = 30, Height = 25 };
             Button btnRemoveMaquina = new Button { Text = "-", Location = new Point(55, 510), Width = 30, Height = 25 };
             Button btnUndoMaquina = new Button { Text = "↺", Location = new Point(90, 510), Width = 30, Height = 25 }; 
-            Button btnResetMaquina = new Button { Text = "Padrão", Location = new Point(125, 510), Width = 55, Height = 25 };
+            Button btnResetMaquina = new Button { Text = "Restaurar", Location = new Point(125, 510), Width = 65, Height = 25 };
             Button btnSalvarPadraoMaquina = new Button { Text = "Salvar Padrão", Location = new Point(190, 510), Width = 95, Height = 25 };
 
             btnAddMaquina.Click += (s, e) =>
@@ -296,16 +291,44 @@ namespace ConsolidadorLogs
                 }
             };
 
+
+            chekMaquinas.Items.AddRange(listMaquinas.ToArray());
+            for (int i = 0; i < chekMaquinas.Items.Count; i++)
+            {
+                chekMaquinas.SetItemChecked(i, true);
+            }
+
+            chekgnorarMaquina = new CheckBox
+            {
+                Text = "Ignorar máquina",
+                Location = new Point(160, 200),
+                AutoSize = true
+            };
+
+            chekgnorarMaquina.CheckedChanged += (s, e) =>
+            {
+                bool usarMaquina = !chekgnorarMaquina.Checked;
+                
+                // Desabilita/habilita os controles de máquina
+                chekMaquinas.Enabled = usarMaquina;
+                btnAddMaquina.Enabled = usarMaquina;
+                btnRemoveMaquina.Enabled = usarMaquina;
+                btnUndoMaquina.Enabled = usarMaquina;
+                btnResetMaquina.Enabled = usarMaquina;
+                btnSalvarPadraoMaquina.Enabled = usarMaquina;
+            };
+
+
             Label lblLogs = new Label
             {
                 Text = "Selecione os Logs:",
-                Location = new Point(260, 200),
+                Location = new Point(300, 200),
                 AutoSize = true
             };
 
             chekLogs = new CheckedListBox
             {
-                Location = new Point(260, 225),
+                Location = new Point(300, 225),
                 Width = 490,
                 Height = 280,
                 CheckOnClick = true
@@ -320,7 +343,7 @@ namespace ConsolidadorLogs
             Button btnAddLog = new Button { Text = "+", Location = new Point(300, 510), Width = 30, Height = 25 };
             Button btnRemoveLog = new Button { Text = "-", Location = new Point(335, 510), Width = 30, Height = 25 };
             Button btnUndoLog = new Button { Text = "↺", Location = new Point(370, 510), Width = 30, Height = 25 }; // Botão Reverter
-            Button btnResetLog = new Button { Text = "Padrão", Location = new Point(405, 510), Width = 55, Height = 25 };
+            Button btnResetLog = new Button { Text = "Restaurar", Location = new Point(405, 510), Width = 65, Height = 25 };
             Button btnSalvarPadraoLog = new Button { Text = "Salvar Padrão", Location = new Point(470, 510), Width = 95, Height = 25 };
             
             btnAddLog.Click += (s, e) =>
@@ -462,6 +485,7 @@ namespace ConsolidadorLogs
                 lblMaquinas, chekMaquinas, btnAddMaquina, btnRemoveMaquina,
                 lblLogs, chekLogs, btnAddLog, btnRemoveLog, btnUndoLog, btnUndoMaquina, 
                 btnResetLog, btnResetMaquina, btnSalvarPadraoLog, btnSalvarPadraoMaquina,
+                chekgnorarMaquina,
                 lblStatus, progressBar,
                 btnExecutar
             });
@@ -482,6 +506,8 @@ namespace ConsolidadorLogs
         // Método acionado ao clicar no botão "EXECUTAR"
         private async void BtnExecutar_Click(object? sender, EventArgs e)
         {
+            // Congela a janela inteira (nenhum botão, texto ou clique funciona na janela)
+            this.Enabled = false;
             try
             {
                 if (string.IsNullOrWhiteSpace(textOrigem.Text))
@@ -533,8 +559,9 @@ namespace ConsolidadorLogs
                         textDestino.Text,
                         dateInicio.Value,
                         dateFim.Value,
-                        maquinasSelecionadas,
+                        chekgnorarMaquina.Checked ? new List<string>() : maquinasSelecionadas,
                         logsSelecionados,
+                        chekgnorarMaquina.Checked,
                         progressHandler);
                 });
 
@@ -567,6 +594,7 @@ namespace ConsolidadorLogs
             }
             finally
             {
+                this.Enabled = true; // Reabilita a janela
                 btnExecutar.Enabled = true; // Reabilita o botão de execução
                 progressBar.Value = 0; // Reseta a barra de progresso
                 lblStatus.Text = "Status: Aguardando execução...";
