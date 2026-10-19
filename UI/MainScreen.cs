@@ -69,6 +69,7 @@ namespace ConsolidadorLogs
             // Configurações básicas da janela
             this.Text = "Consolidador de Logs";
             this.Size = new Size(840, 670);
+            this.Icon = new Icon("Assets/png.ico");            
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
