@@ -17,7 +17,8 @@ namespace ConsolidadorLogs.Core
             DateTime dataInicio,
             DateTime dataFim,
             List<string> maquinasSelecionadas,
-            List<string> logsSelecionados)
+            List<string> logsSelecionados,
+            IProgress<ProgressReport>? progress = null)
         {
             if (!Directory.Exists(pastaOrigem))
             {
@@ -26,9 +27,10 @@ namespace ConsolidadorLogs.Core
 
             List<string> logsNaoEncontrados = new List<string>();
 
+            // 0. Avisa a interface ANTES de iniciar a busca no disco
+            progress?.Report(new ProgressReport(5, "Mapeando ficheiros e subpastas..."));
+            
             // 1. Mapeia todos os nomes de arquivos EXATOS que o sistema deve procurar
-            // Chave do Dicionário: "NomeMaquina_NomeLog.txt"
-            // Valor: Estrutura [Maquina, Log, Encontrado (bool)]
             Dictionary<string, (string Maquina, string Log, bool Encontrado)> mapaArquivosEsperados = new();
 
             foreach (var maq in maquinasSelecionadas)
@@ -42,25 +44,34 @@ namespace ConsolidadorLogs.Core
 
             // 2. Busca todos os arquivos .txt na origem e em todas as suas subpastas
             string[] todosArquivos = Directory.GetFiles(pastaOrigem, "*.txt", SearchOption.AllDirectories);
-
-            // 3. Estrutura de acúmulo: Chave = "NomeMaquina_NomeLog.txt" -> Valor = Conteúdo acumulado
+            
+            // 3. Estrutura de acúmulo
             Dictionary<string, StringBuilder> logsAgrupados = new();
-
-            foreach (string caminhoArquivo in todosArquivos)
+            
+            // ---------------------------------------------------------------------------------
+            // LAÇO COM O PROGRESSO:
+            // ---------------------------------------------------------------------------------
+            int totalArquivos = todosArquivos.Length;
+            
+            for (int i = 0; i < totalArquivos; i++)
             {
+                string caminhoArquivo = todosArquivos[i];
                 string nomeArquivo = Path.GetFileName(caminhoArquivo);
                 DateTime dataCriacao = File.GetLastWriteTime(caminhoArquivo);
 
+                // Reporta progresso proporcional (10% a 70%)
+                int pct = 10 + (int)(((i + 1) / (double)totalArquivos) * 60);
+                progress?.Report(new ProgressReport(pct, $"Processando arquivo {i + 1} de {totalArquivos}: {nomeArquivo}"));
+                
                 // Filtro por Data
                 if (dataCriacao.Date < dataInicio.Date || dataCriacao.Date > dataFim.Date)
                 {
                     continue;
                 }
 
-                // Verifica se o arquivo atual tem o nome EXATO "NomeMaquina_NomeLog.txt" da nossa lista esperada
+                // Verifica se o arquivo atual bate com a lista esperada
                 if (mapaArquivosEsperados.TryGetValue(nomeArquivo, out var info))
                 {
-                    // Marca que pelo menos um arquivo dessa combinação foi encontrado
                     mapaArquivosEsperados[nomeArquivo] = (info.Maquina, info.Log, true);
 
                     try
@@ -72,25 +83,24 @@ namespace ConsolidadorLogs.Core
                             logsAgrupados[nomeArquivo] = new StringBuilder();
                         }
 
-                        // Concatena os logs
-                        // Remove quebras de linha no final para evitar linhas em branco extras
                         string textoLimpo = conteudoDia.TrimEnd('\r', '\n');
-                        if (logsAgrupados[nomeArquivo].Length > 0) // Adiciona uma linha em branco entre os dias, se já houver conteúdo acumulado
-
+                        if (logsAgrupados[nomeArquivo].Length > 0)
                         {
-                            logsAgrupados[nomeArquivo].AppendLine(); // Adiciona uma linha em branco entre os dias
+                            logsAgrupados[nomeArquivo].AppendLine();
                         }
                         logsAgrupados[nomeArquivo].Append(textoLimpo); 
                     }
                     catch
                     {
-                        // Se falhar na leitura de um arquivo específico, ignora e continua
                         continue;
                     }
                 }
             }
 
-            // 4. Identifica quais arquivos da combinação "NomeMaquina_NomeLog.txt" nunca foram encontrados
+            // Reporta a checagem de arquivos não encontrados
+            progress?.Report(new ProgressReport(70, "Verificando arquivos não encontrados..."));
+            
+            // 4. Identifica quais arquivos da combinação nunca foram encontrados
             foreach (var item in mapaArquivosEsperados)
             {
                 if (!item.Value.Encontrado)
@@ -99,8 +109,8 @@ namespace ConsolidadorLogs.Core
                 }
             }
 
-            // 5. Salva os arquivos consolidados no destino
-            GravarLogsConsolidados(pastaDestino, logsAgrupados, mapaArquivosEsperados);
+            // 5. Salva os arquivos consolidados no destino (80% a 100%)
+            GravarLogsConsolidados(pastaDestino, logsAgrupados, mapaArquivosEsperados, progress);
 
             return logsNaoEncontrados;
         }
@@ -108,27 +118,41 @@ namespace ConsolidadorLogs.Core
         private static void GravarLogsConsolidados(
             string pastaDestino,
             Dictionary<string, StringBuilder> logsAgrupados,
-            Dictionary<string, (string Maquina, string Log, bool Encontrado)> mapaInfo)
+            Dictionary<string, (string Maquina, string Log, bool Encontrado)> mapaInfo,
+            IProgress<ProgressReport>? progress = null)
         {
+            int totalArquivos = logsAgrupados.Count;
+            if (totalArquivos == 0)
+            {
+                progress?.Report(new ProgressReport(100, "Nenhum arquivo encontrado para consolidação."));
+                return;
+            }
+
+            int contador = 0;
+
             foreach (var item in logsAgrupados)
             {
+                contador++;
+                // Distribuição proporcional do progresso (80% a 100%)
+                int pct = 80 + (int)((contador / (double)totalArquivos) * 20);
                 string nomeArquivo = item.Key;
                 string maquina = mapaInfo[nomeArquivo].Maquina;
 
-                // Cria a pasta da máquina no destino (ex: Destino/RC2092KS01)
+                progress?.Report(new ProgressReport(pct, $"Gravando arquivo {contador} de {totalArquivos}: {nomeArquivo}"));
+
                 string pastaMaquinaDestino = Path.Combine(pastaDestino, maquina);
                 if (!Directory.Exists(pastaMaquinaDestino))
                 {
                     Directory.CreateDirectory(pastaMaquinaDestino);
                 }
 
-                // Obtém o texto bruto totalmente unificado de todos os dias
                 string textoConsolidadoBruto = item.Value.ToString();
-
-                // Salva o arquivo final consolidado
                 string caminhoFinal = Path.Combine(pastaMaquinaDestino, nomeArquivo);
                 File.WriteAllText(caminhoFinal, textoConsolidadoBruto);
             }
+
+            // Reporta 100% apenas APÓS finalizar todos os arquivos da lista
+            progress?.Report(new ProgressReport(100, "Consolidação finalizada com sucesso!"));
         }
     }
 }

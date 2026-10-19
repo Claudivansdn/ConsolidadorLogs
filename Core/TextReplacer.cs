@@ -34,28 +34,35 @@ namespace ConsolidadorLogs.Core
         /// Varre todos os arquivos .txt na pasta informada (e suas subpastas)
         /// e aplica as substituições de texto sobrescrevendo os arquivos originais.
         /// </summary>
-        public static void ProcessarPasta(string pastaDestino)
+        public static void ProcessarPasta(string pastaDestino, IProgress<ProgressReport>? progress = null)
         {
-            if (!Directory.Exists(pastaDestino))
+            if (!Directory.Exists(pastaDestino)) 
             {
                 throw new DirectoryNotFoundException("A pasta informada para substituição de texto não foi encontrada.");
             }
 
+            progress?.Report(new ProgressReport(0, "Iniciando processamento de arquivos..."));
+
             // Busca todos os arquivos .txt salvos na pasta destino
             string[] arquivos = Directory.GetFiles(pastaDestino, "*.txt", SearchOption.AllDirectories);
+            int total = arquivos.Length;
 
-            foreach (string caminhoArquivo in arquivos)
+            if (total == 0)
             {
+                progress?.Report(new ProgressReport(100, "Nenhum arquivo encontrado para formatação."));
+                return;
+            }
+
+            for (int i = 0; i < total; i++)
+            {
+                int pct = (int)(((i + 1) / (double)total) * 100); // Calcula o percentual de progresso (0% a 100%)
+                progress?.Report(new ProgressReport(pct, $"Formatando textos (pontos e booleanos) [{i + 1}/{total}]..."));
+                
                 try
                 {
-                    // Lê o conteúdo bruto do arquivo consolidado
-                    string conteudoOriginal = File.ReadAllText(caminhoArquivo);
-
-                    // Aplica as substituições
+                    string conteudoOriginal = File.ReadAllText(arquivos[i]);
                     string conteudoTratado = ProcessarTexto(conteudoOriginal);
-
-                    // Sobrescreve o arquivo no disco com os dados formatados
-                    File.WriteAllText(caminhoArquivo, conteudoTratado);
+                    File.WriteAllText(arquivos[i], conteudoTratado);
                 }
                 catch
                 {
@@ -63,6 +70,9 @@ namespace ConsolidadorLogs.Core
                     continue;
                 }
             }
+
+            // Reporta 100% apenas ao FINAL de todos os arquivos
+            progress?.Report(new ProgressReport(100, "Formatação de textos concluída com sucesso."));
         }
     }
 }
